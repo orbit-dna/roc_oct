@@ -1,31 +1,30 @@
+#!/home/longen/.pyenv/shims/python
 # -*- coding:utf-8 -*-
 import os
-import time
 import json
 import bs4
-import signal
+import logging
 import datetime
 from argparse import ArgumentParser
 from urllib.parse import urlencode, urljoin
-from requests.sessions import Session
-
-from multiprocessing import Queue, Process
-
-tasks = Queue()
-
-session = Session()
+from requests import get
+from logging import handlers
 
 from utils import retry_wrapper
 
+project_path = os.path.dirname(__file__)
 
-def close_handler(*args, **kwargs):
-    os.kill(os.getpid(), 9)
+logger = logging.getLogger("roc_oct")
+
+file_handler = handlers.RotatingFileHandler(
+    os.path.join(project_path, "roc_oct.log"), maxBytes=1024*1024*10, backupCount=5)
+
+logger.addHandler(file_handler)
+
+logger.setLevel(logging.DEBUG)
 
 
-def interrupt_handler(*args, **kwargs):
-    raise KeyboardInterrupt
-
-get = retry_wrapper(5, exception=(Exception, KeyboardInterrupt), error_handler=lambda *args, **kwargs: print("error in requests.get: %s"%str(args)))(session.get)
+get = retry_wrapper(5, error_handler=lambda *args, **kwargs: logger.debug("error in requests.get: %s"%str(args)))(get)
 
 oct_adr = "http://octopus.app.jinanlongen.com/store_tasks/tb_new_arrival_search"
 
@@ -58,15 +57,14 @@ roc_headers = {
     "Cookie": "_roc_session=R0NwejZ1emFCYndKdGZWSU1OaGVtOVZDWEpHVFlZL0VyaUFwU1lRUGJrTmE4U2N4Z2xOZG16NmJHbGZwN1NNZ0Y2V0JZOFZ0RVo0YmtZaldoZXdsMHpjRE1GNmNhUUs0bTFVcVhwMEhQaU5NdENhUTFTTjl0dXVWMlhmZWY5VUNVK0w5UFRucEVlZW10YkVlSnhmblFCYkt6UDhZdXJkVnhKR3BVb05EcTM2aC9DMkFUN0tGNTZMdVhxclpFelQvWU1aQ2NWOWxWbElSKzZpWkJ4Z2MzNXdBR0F0ZUFzYjc0anVOalFIYzZvS2had1JiR3c3eUNhSXJZdDJ5VlZOWlBHdFhVVCtUQ2lMTjZNRkxSUHVERXFkcFFmaVFVTXJtb2NsZUZZTnQ1aXNWOVhBOEFscGlUbVZIZ3Q0Y3R1UUp2WGhSUXF4cldHVDBXNGdUUm9rVkpCZDVQZFRyRFVOem5lWWdNbVlOeUphSGxLVmY2Tll0MCtvSEI5OXB5YjZ5Q2MzVVJrTzYySk9DdVl5WEJZVXhGblp5N0hySVJPVGVhSzRDMk9KUHY4L04rR2FPbHo2NkdZTmd3ZlRkWkZMYTZYWmZjQWdHVVlWVGJCMG9DQW1ud3ZpeXpYRTYyVEhKTHAxOG94eVJkV1Y1eC82cUhBVTVFQ2EzMnAvWFpDV1FGSGZ1Q3R2cHhkR3lKMXR1UHVlZ0NRei92WFdZSTV2blN0S0g5S1pSMEZrPS0tSVFWTTRBMkozU0c5OEdaemszZllrQT09--64524b5012214aef121cdecb2732248dcc03a96a"
 }
 
-oct_total_adr = "http://192.168.21.63:10000/store_tasks.json"
+oct_total_adr = "http://192.168.200.94:10000/store_tasks.json"
 
 
 taxon_adr = "http://roc.app.jinanlongen.com/taxons/%s/children.json"
 
 
-def get_task_ids():
-    date = (datetime.datetime.now() + datetime.timedelta(days=2)).strftime("%Y-%m-%d")
-    oct_params["planned_upload_step_end_at"] = date
+def get_task_ids(date):
+    oct_params["planned_upload_step_end_at"] = "%s-%s-%s"%(date[:4], date[4:6], date[6:])
     first_url = "%s?%s"%(oct_adr, urlencode(oct_params))
     links = []
     task_ids = []
@@ -99,7 +97,7 @@ def get_gender_brand_site_taxon():
         value = option.get("value")
         if value == "0":
             continue
-        taxons[option.text] = int(value)
+        taxons[option.text] = (int(value), dict())
     for option in soup.select('#q_gender_id option'):
         value = option.get("value")
         if not value:
@@ -127,28 +125,19 @@ def get_crawl_tasks(taxons, genders, sites, brands, **kwargs):
     brand = kwargs.pop("brand", "")
     gender = kwargs.pop("gender", "")
     taxon_code = "0"
-
+    children = taxons
     while True:
-        count = 1
-        while True:
-            taxon = ts[-1*count]
-            if taxon:
-                if taxon in taxons:
-                    taxon_code = taxons[taxon]
-                    break
+        try:
+            taxon_code, children = children[ts.pop(0)]
+            if not children:
+                resp = get(taxon_adr%taxon_code, headers=roc_headers)
+                if resp.status_code == 200:
+                    for child in json.loads(resp.text):
+                       children[child["name"]] = child["id"], dict()
                 else:
-                    count += 1
-            else:
-                break
-
-        if taxon == ts[-1]:
+                    break
+        except (KeyError, IndexError):
             break
-
-        resp = get(taxon_adr%taxon_code, headers=roc_headers)
-        if resp.status_code == 200:
-            children = json.loads(resp.text)
-            for child in children:
-                taxons[child["name"]] = child["id"]
 
     roc_params["q[source_site_id]"] = source_site_name and sites[source_site_name]
     roc_params["q[gender_id]"] = gender and genders[gender]
@@ -162,109 +151,58 @@ def get_crawl_tasks(taxons, genders, sites, brands, **kwargs):
     for tr in trs:
         tds = tr.select("td")
         crawl_tasks.append((tds[1].text, tds[2].text, tds[3].text, tds[4].text, tds[5].text, tds[9].text))
-    print("Oct task id: %s, Roc task count: %s. "%(kwargs["store_task_id"], len(crawl_tasks)))
+    logger.debug("Oct task id: %s, Roc task count: %s. "%(kwargs["store_task_id"], len(crawl_tasks)))
     return crawl_tasks
 
 
-def control(pid):
-    length = tasks.qsize()
-    print("tasks len: %s"%length)
-    def close(*args, **kwargs):
-        os.kill(pid, signal.SIGTERM)
-        raise KeyboardInterrupt
-    signal.signal(signal.SIGTERM, close)
-    signal.signal(signal.SIGINT, close)
-    while True:
-        time.sleep(10)
-        current_length = tasks.qsize()
-        print("Current length: %s"%current_length)
-        if current_length:
-            if current_length == length:
-                print("Send signal.SIGINT to child. ")
-                os.kill(pid, signal.SIGINT)
-            else:
-                length = current_length
-        else:
-            break
-
-
-def listen():
-    signal.signal(signal.SIGTERM, close_handler)
-    signal.signal(signal.SIGINT, interrupt_handler)
-
-
-def enrich_tasks():
+def start():
     parser = ArgumentParser()
     parser.add_argument("-t", "--total", action="store_true")
-    print("Start to get total tasks. ")
+    parser.add_argument("-i", "--id", required=True)
+    logger.debug("Start to get total tasks. ")
     total_tasks = get_total_tasks()
-    if not parser.parse_args().total:
-        print("Start to get task ids the day after tomorrow. ")
-        task_ids = get_task_ids()
-        ts = [task for task in total_tasks if str(task["store_task_id"]) in task_ids]
+    args = parser.parse_args()
+    if not args.total:
+        logger.debug("Start to get task ids of %s. "%args.id)
+        task_ids = get_task_ids(args.id)
+        tasks = [task for task in total_tasks if str(task["store_task_id"]) in task_ids]
     else:
-        ts = total_tasks
-
-    for task in ts:
-        tasks.put(task)
-
-
-def run():
-    listen()
-    print("Start to get taxons, genders, sites, brands. ")
+        tasks = total_tasks
+    logger.debug("Start to get taxons, genders, sites, brands. ")
     taxons, genders, sites, brands = get_gender_brand_site_taxon()
     crawl_tasks = dict()
     unregist_tasks = list()
-    print("Enrich crawl tasks and unregist tasks. ")
-    # have_got = False
-    while tasks.qsize():
-        task = tasks.get_nowait()
-        if task["store_task_id"] in ["1656", 1656]:
-            continue
-        # if not (have_got or task["store_task_id"] in ["199", 199]):
-        #     continue
-        # have_got = True
+    logger.debug("Enrich crawl tasks and unregist tasks. ")
+    for task in tasks:
         find_crawl_tasks = get_crawl_tasks(taxons, genders, sites, brands, **task)
         if find_crawl_tasks:
             for crawl_task in find_crawl_tasks:
                 crawl_tasks[crawl_task[0]] = crawl_task
         else:
-            print("Oct task id: %s found crawl task failed. " % task["store_task_id"])
+            logger.debug("Oct task id: %s found crawl task failed. "%task["store_task_id"])
             unregist_tasks.append(task)
 
-    crawl_tasks_file = open("crawl_tasks_%s.csv" % datetime.datetime.now().strftime("%Y%m%d%H%M%S"), "w")
-    unregist_tasks_file = open("unregist_tasks_%s.csv" % datetime.datetime.now().strftime("%Y%m%d%H%M%S"), "w")
+    crawl_tasks_file = open("crawl_tasks_%s.csv"%args.id, "w")
+    unregist_tasks_file = open("unregist_tasks_%s.csv"%args.id, "w")
 
     crawl_tasks_file.write("ROC任务ID,来源网站名称,分类名称,性别名称,品牌名称,最后执行时间,最后执行时间差/天\n")
     for crawl_task in crawl_tasks.values():
         crawl_tasks_file.write((",".join(crawl_task)))
         try:
-            days = ",%s\n" % (
-            datetime.datetime.now() - datetime.datetime.strptime(crawl_task[-1], "%Y/%m/%d %H:%M:%S")).days
+            days = ",%s\n" % (datetime.datetime.now() - datetime.datetime.strptime(crawl_task[-1], "%Y/%m/%d %H:%M:%S")).days
         except ValueError:
-            days = 0
+            days = ",%s\n" % 0
         crawl_tasks_file.write(days)
 
     unregist_tasks_file.write("编号,来源网站,品牌,性别,分类,店铺/任务id\n")
     for index, unregist_task in enumerate(unregist_tasks):
         unregist_tasks_file.write(
-            "%s,%s,%s,%s,%s,%s/%s\n" % (index + 1, unregist_task["source_site_name"],
-                                        unregist_task["brand"], unregist_task["gender"], unregist_task["taxon"],
-                                        unregist_task["store_name"], unregist_task["store_task_id"]))
+            "%s,%s,%s,%s,%s,%s/%s\n"%(index+1, unregist_task["source_site_name"],
+            unregist_task["brand"], unregist_task["gender"], unregist_task["taxon"],
+            unregist_task["store_name"], unregist_task["store_task_id"]))
 
     crawl_tasks_file.close()
     unregist_tasks_file.close()
-
-
-def start():
-    enrich_tasks()
-    child = Process(target=run)
-    child.start()
-    pid = child.pid
-    control(pid)
-
-
-
 
 
 if __name__ == "__main__":
