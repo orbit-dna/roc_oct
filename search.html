@@ -1,0 +1,16 @@
+<html>
+    <head>
+        <title>roc oct对比程序</title>
+    </head>
+    <body>
+        <ul>
+            <li>输入上新时间，eg: 20170901</li>
+            <li>若为空则查找全部上新</li>
+        </ul>
+        <p style="display: {{ 'block' if date else 'none' }}; color: red" >错误的日期：{{date}}</p>
+        <form action="/search" onsubmit='return (function(){if(!document.getElementById("date").value){return confirm("时间为空，确定要查看全量上新吗？");}})()'>
+        上新时间：<input type="text" name="date" id="date"/>
+        <input type="submit" value="提交" />
+        </form>
+    </body>
+</html>
