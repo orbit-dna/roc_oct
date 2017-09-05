@@ -66,7 +66,7 @@ def search():
                         days = str((now - datetime.strptime(explore_task["last_exec_at"][:10], "%Y-%m-%d")).days)
                     except (ValueError, TypeError):
                         days = "0"
-                    crawl_tasks[explore_task["explore_task_id"]] = [shop["store_name"], shop["store_task_id"],
+                    crawl_tasks[explore_task["explore_task_id"]] = [shop["store_name"], str(shop["store_task_id"]),
                                                                     str(explore_task["explore_task_id"]),
                                                                     shop["source_site_name"],
                                                                     taxon, shop["gender"], shop["brand"],
