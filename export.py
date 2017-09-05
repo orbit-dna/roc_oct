@@ -21,7 +21,7 @@ shops = json.loads(get("http://192.168.200.94:10000/store_tasks.json").text)
 logger = logging.getLogger("export")
 
 file_handler = handlers.RotatingFileHandler(
-    os.path.join(project_path, "export.log"), maxBytes=1024*1024*10, backupCount=5)
+    os.path.join(project_path, "export.log"), maxBytes=1024 * 1024 * 10, backupCount=5)
 
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
@@ -37,7 +37,6 @@ def get_shop(shops_store=[time.time(), json.loads(get("http://192.168.200.94:100
 
 @route('/')
 def index():
-    id = request.GET.get("id", "")
     return template(os.path.join(project_path, "search.html"), date=None)
 
 
@@ -50,7 +49,7 @@ def search():
         if date:
             if re.match("\d{8}", date):
                 task_ids = get_task_ids(date)
-                logger.debug("Get oct task ids at %s. "%date)
+                logger.debug("Get oct task ids at %s. " % date)
                 shops = [shop for shop in shops if str(shop["store_task_id"]) in task_ids]
             else:
                 return template(os.path.join(project_path, "search.html"), date=date)
@@ -61,28 +60,34 @@ def search():
             explore_tasks = [tasks for tasks in shop["explore_tasks"] if tasks["explore_task_id"]]
             if explore_tasks:
                 for explore_task in explore_tasks:
-                    taxon = shop["taxon"] if shop["taxon"].count(explore_task["taxon"]) else "|".join([shop["taxon"], explore_task["taxon"]])
+                    taxon = shop["taxon"] if shop["taxon"].count(explore_task["taxon"]) else "|".join(
+                        [shop["taxon"], explore_task["taxon"]])
                     try:
                         days = str((now - datetime.strptime(explore_task["last_exec_at"][:10], "%Y-%m-%d")).days)
-                    except (ValueError, TypeError) as e:
+                    except (ValueError, TypeError):
                         days = "0"
-                    crawl_tasks[explore_task["explore_task_id"]] = [str(explore_task["explore_task_id"]),
-                    shop["source_site_name"], taxon, shop["gender"], shop["brand"], explore_task["last_exec_at"] or "", days]
+                    crawl_tasks[explore_task["explore_task_id"]] = [shop["store_name"], shop["store_task_id"],
+                                                                    str(explore_task["explore_task_id"]),
+                                                                    shop["source_site_name"],
+                                                                    taxon, shop["gender"], shop["brand"],
+                                                                    explore_task["last_exec_at"] or "", days]
             else:
                 unregist_tasks.append(shop)
         logger.debug("Compare oct task and roc task finished. ")
         crawl_tasks_str = ""
         unregist_tasks_str = ""
 
-        crawl_tasks_str += "ROC任务ID,来源网站名称,分类名称,性别名称,品牌名称,最后执行时间,最后执行时间差/天\n"
+        crawl_tasks_str += "店铺,店铺任务id,ROC任务ID,来源网站名称,分类名称,性别名称,品牌名称,最后执行时间,最后执行时间差/天\n"
         for crawl_task in crawl_tasks.values():
             crawl_tasks_str += (",".join(crawl_task)) + "\n"
 
         unregist_tasks_str += "编号,来源网站,品牌,性别,分类,店铺/任务id\n"
         for index, unregist_task in enumerate(unregist_tasks):
             unregist_tasks_str += "%s,%s,%s,%s,%s,%s/%s\n" % (index + 1, unregist_task["source_site_name"],
-                    unregist_task["brand"], unregist_task["gender"], unregist_task["taxon"],
-                    unregist_task["store_name"], unregist_task["store_task_id"])
+                                                              unregist_task["brand"], unregist_task["gender"],
+                                                              unregist_task["taxon"],
+                                                              unregist_task["store_name"],
+                                                              unregist_task["store_task_id"])
 
         zip_file = BytesIO()
         zf = zipfile.ZipFile(zip_file, "w")
@@ -98,10 +103,10 @@ def search():
         headers['Content-Length'] = len(body)
         headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
         headers["Accept-Ranges"] = "bytes"
-        headers['Content-Disposition'] = 'attachment; filename="%s.zip"'%time.strftime("%Y%m%d%H%M%S")
+        headers['Content-Disposition'] = 'attachment; filename="%s.zip"' % time.strftime("%Y%m%d%H%M%S")
         return HTTPResponse(body, **headers)
     except Exception as e:
-        logger.error("Error: %s"%traceback.format_exc())
+        logger.error("Error: %s" % traceback.format_exc())
         raise e
 
 
