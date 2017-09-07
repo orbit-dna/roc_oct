@@ -63,25 +63,28 @@ def search():
                     taxon = shop["taxon"] if shop["taxon"].count(explore_task["taxon"]) else "|".join(
                         [shop["taxon"], explore_task["taxon"]])
                     try:
-                        days = str((now - datetime.strptime(explore_task["last_exec_at"][:10], "%Y-%m-%d")).days)
+                        last_exec_at = datetime.strptime(explore_task["last_exec_at"][:19], "%Y-%m-%dT%H:%M:%S")
+                        days = str((now - last_exec_at).days)
+                        last_exec_at = last_exec_at.strftime("%Y-%m-%d %H:%M:%S")
                     except (ValueError, TypeError):
                         days = "0"
+                        last_exec_at = "尚未执行"
                     crawl_tasks[explore_task["explore_task_id"]] = [shop["store_name"], str(shop["store_task_id"]),
                                                                     str(explore_task["explore_task_id"]),
                                                                     shop["source_site_name"],
                                                                     taxon, shop["gender"], shop["brand"],
-                                                                    explore_task["last_exec_at"] or "", days]
+                                                                    last_exec_at, days]
             else:
                 unregist_tasks.append(shop)
         logger.debug("Compare oct task and roc task finished. ")
         crawl_tasks_str = ""
         unregist_tasks_str = ""
 
-        crawl_tasks_str += "店铺,店铺任务id,ROC任务ID,来源网站名称,分类名称,性别名称,品牌名称,最后执行时间,最后执行时间差/天\n"
+        crawl_tasks_str += "店铺,店铺任务ID,ROC任务ID,来源网站名称,分类名称,性别名称,品牌名称,最后执行时间,最后执行时间差/天\n"
         for crawl_task in crawl_tasks.values():
             crawl_tasks_str += (",".join(crawl_task)) + "\n"
 
-        unregist_tasks_str += "编号,来源网站,品牌,性别,分类,店铺/任务id\n"
+        unregist_tasks_str += "编号,来源网站,品牌,性别,分类,店铺/任务ID\n"
         for index, unregist_task in enumerate(unregist_tasks):
             unregist_tasks_str += "%s,%s,%s,%s,%s,%s/%s\n" % (index + 1, unregist_task["source_site_name"],
                                                               unregist_task["brand"], unregist_task["gender"],
