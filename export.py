@@ -30,8 +30,12 @@ logger.setLevel(logging.DEBUG)
 def get_shop(shops_store=[time.time(), json.loads(get("http://192.168.200.94:10000/store_tasks.json").text)]):
     last_time, shops = shops_store
     if time.time() - last_time > 3600:
-        shops_store[0] = time.time()
-        shops_store[1] = json.loads(get("http://192.168.200.94:10000/store_tasks.json").text)
+        resp = get("http://192.168.200.94:10000/store_tasks.json")
+        if resp.status_code == 200:
+            shops_store[1] = json.loads(resp.text)
+            shops_store[0] = time.time()
+        else:
+            logger.error("Roc_oct rails server returns %s: %s. "%(resp.status_code, resp.text))
     return shops_store[1]
 
 
