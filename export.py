@@ -11,7 +11,7 @@ import traceback
 from io import BytesIO
 from requests import get
 from logging import handlers
-from datetime import datetime
+from datetime import datetime, timedelta
 from bottle import route, HTTPResponse, run, request, template
 
 from roc_oct import get_task_ids
@@ -70,7 +70,7 @@ def search():
                         [shop["taxon"], explore_task["taxon"]])
                     try:
                         last_exec_at = datetime.strptime(
-                            explore_task["last_exec_at"][:19], "%Y-%m-%dT%H:%M:%S") + datetime.timedelta(hours=8)
+                            explore_task["last_exec_at"][:19], "%Y-%m-%dT%H:%M:%S") + timedelta(hours=8)
                         days = str((now - last_exec_at).days)
                         last_exec_at = last_exec_at.strftime(
                             "%Y-%m-%d %H:%M:%S")
