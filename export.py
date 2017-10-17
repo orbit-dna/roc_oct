@@ -70,7 +70,7 @@ def search():
                         [shop["taxon"], explore_task["taxon"]])
                     try:
                         last_exec_at = datetime.strptime(
-                            explore_task["last_exec_at"][:19], "%Y-%m-%dT%H:%M:%S") + datetime.timedelta
+                            explore_task["last_exec_at"][:19], "%Y-%m-%dT%H:%M:%S") + datetime.timedelta(hours=8)
                         days = str((now - last_exec_at).days)
                         last_exec_at = last_exec_at.strftime(
                             "%Y-%m-%d %H:%M:%S")
