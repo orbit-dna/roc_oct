@@ -35,7 +35,8 @@ def get_shop(shops_store=[time.time(), json.loads(get("http://192.168.200.94:100
             shops_store[1] = json.loads(resp.text)
             shops_store[0] = time.time()
         else:
-            logger.error("Roc_oct rails server returns %s: %s. "%(resp.status_code, resp.text))
+            logger.error("Roc_oct rails server returns %s: %s. " %
+                         (resp.status_code, resp.text))
     return shops_store[1]
 
 
@@ -61,20 +62,24 @@ def search():
         unregist_tasks = list()
 
         for shop in shops:
-            explore_tasks = [tasks for tasks in shop["explore_tasks"] if tasks["explore_task_id"]]
+            explore_tasks = [
+                tasks for tasks in shop["explore_tasks"] if tasks["explore_task_id"]]
             if explore_tasks:
                 for explore_task in explore_tasks:
                     taxon = shop["taxon"] if shop["taxon"].count(explore_task["taxon"]) else "|".join(
                         [shop["taxon"], explore_task["taxon"]])
                     try:
-                        last_exec_at = datetime.strptime(explore_task["last_exec_at"][:19], "%Y-%m-%dT%H:%M:%S")
+                        last_exec_at = datetime.strptime(
+                            explore_task["last_exec_at"][:19], "%Y-%m-%dT%H:%M:%S") + datetime.timedelta
                         days = str((now - last_exec_at).days)
-                        last_exec_at = last_exec_at.strftime("%Y-%m-%d %H:%M:%S")
+                        last_exec_at = last_exec_at.strftime(
+                            "%Y-%m-%d %H:%M:%S")
                     except (ValueError, TypeError):
                         days = "0"
                         last_exec_at = "尚未执行"
                     crawl_tasks[explore_task["explore_task_id"]] = [shop["store_name"], str(shop["store_task_id"]),
-                                                                    str(explore_task["explore_task_id"]),
+                                                                    str(
+                                                                        explore_task["explore_task_id"]),
                                                                     shop["source_site_name"],
                                                                     taxon, shop["gender"], shop["brand"],
                                                                     last_exec_at, days]
@@ -108,9 +113,11 @@ def search():
         headers = dict()
         headers['Content-Type'] = 'application/zip'
         headers['Content-Length'] = len(body)
-        headers['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
+        headers['Date'] = time.strftime(
+            "%a, %d %b %Y %H:%M:%S GMT", time.gmtime())
         headers["Accept-Ranges"] = "bytes"
-        headers['Content-Disposition'] = 'attachment; filename="%s.zip"' % time.strftime("%Y%m%d%H%M%S")
+        headers['Content-Disposition'] = 'attachment; filename="%s.zip"' % time.strftime(
+            "%Y%m%d%H%M%S")
         return HTTPResponse(body, **headers)
     except Exception as e:
         logger.error("Error: %s" % traceback.format_exc())
@@ -118,4 +125,5 @@ def search():
 
 
 if __name__ == "__main__":
-    run(host=os.environ.get("HOST", "127.0.0.1"), port=os.environ.get("PORT", 8888))
+    run(host=os.environ.get("HOST", "127.0.0.1"),
+        port=os.environ.get("PORT", 8888))

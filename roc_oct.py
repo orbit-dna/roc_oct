@@ -85,6 +85,10 @@ def get_task_ids(date):
     return task_ids
 
 
+def get_jd_task_ids(date=""):
+    return json.loads(get("http://jdnew.net.jinanlongen.com/gettaskontime.ashx?startDate=%s&endDate=%s"%(date, date)).text)
+
+
 def get_total_tasks():
     return json.loads(get(url=oct_total_adr).text)
 

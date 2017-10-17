@@ -28,14 +28,23 @@
         $(document).ready(function(){
             $("#btn").click(function(){
                var date = $("#date").val();
+
                if(!date){
                    var result = confirm("时间为空，确定要查看全量上新吗？");
                    if(!result){
                        return false;
                    }
                }
+                var site = $("input[type=radio]:checked");
+               if(site.val() == "1"){
+                   var url = "/search?date=" + date;
+               }else if(site.val() == "0"){
+                   var url = "/search_jd?date=" + date;
+               }else{
+
+               }
                $.ajax({
-                  url: "/search?date=" + date,
+                  url: url,
                   success: function(data){
                       var id = data.id;
                       ti_id = setInterval("check("+id+")", 10000);
@@ -56,6 +65,8 @@
         </ul>
         <p></p>
         上新时间：<input type="text" name="date" id="date"/>
+        网站：京东<input type="radio" name="site" value="0" />
+            淘宝<input type="radio" name="site" value="1" />
         <input id="btn" type="submit" value="提交" />
     </body>
 </html>
