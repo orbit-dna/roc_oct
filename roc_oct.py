@@ -37,7 +37,7 @@ cycle_grade:请选择
 store_task_id:""".split("\n"))
 
 oct_headers = {
-    "Cookie": "_session_id=57decd1935c294f27f973ac6764c8915"
+    "Cookie": "_session_id=3c46d2d0453db21f331e150775380c5b"
 }
 
 roc_adr = "http://roc.app.jinanlongen.com/explore_tasks"
@@ -210,4 +210,4 @@ def start():
 
 
 if __name__ == "__main__":
-    start()
+    print(get_task_ids("2017-11-29"))
