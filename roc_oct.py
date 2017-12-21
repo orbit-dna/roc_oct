@@ -37,7 +37,7 @@ cycle_grade:请选择
 store_task_id:""".split("\n"))
 
 oct_headers = {
-    "Cookie": "_session_id=3c46d2d0453db21f331e150775380c5b"
+    "Cookie": "_session_id=7856fd5bed1784fe4f5ef96a448f7a34"
 }
 
 roc_adr = "http://roc.app.jinanlongen.com/explore_tasks"
@@ -54,7 +54,7 @@ q[last_exec_at_start]:
 q[last_exec_at_end]:""".split("\n"))
 
 roc_headers = {
-    "Cookie": "_roc_session=RDBmWk5zNE5QWlh2bUJ3SGlIY0QveVRTNUNQenVkTG5PcmxhdjNoUzYrRi9PL1RtZTR3UTNSK1gxbWcyT1Z6aE9IaWdPVVIxUG1majFHNlFtYm9LandRQlk1VFIvL1pJV0xjMUxxbFJVTXprWUI4OVhYMVM2WGdpbm12MktaMnpsTUh3VDg2ZFFDdnFTM0VNd1AvUmUyaEwzVytkbU5hcmVNMW5JWXZlbHdtNXRWeXNsQUQ0N2JqYjVpNGZuMFVILS1DYUdDaVZsbVdQQ3Z5TGZISHI0SHVRPT0%3D--554d4de4f4dfd7df93ae9f77eaefd113e28c7e9b"
+    "Cookie": "_roc_session=T0ExVDVjemZIcFFCL3dSdDJuTWhnaDNZcndadG10Q252WVowTWk2cElrakhGeXdXaE1aWEpWWkJnamdpUUFFR0VaZW1mcjF5VzlDU2RtY0JCbGlBWGdGTXJJcVphd0tydk5kV1p4QUZkUGJaNWlwN2s2TEdwcGN1RkxDNW11ek56SUxQNlk3SUJudXlveU93QUVoNjE5RzdKelF6YVFqSFRiZmVtREJibXdzZm9HbklOMVk0cGtUNkJ4ak9kdDAxLS1ZaEtzSFpHWGFYYTBmRFp4dmFlTDdBPT0%3D--54b6a1901cd0270998b86fe3b5a4164572d4bfaa"
 }
 
 oct_total_adr = "http://192.168.200.94:10000/store_tasks.json"
