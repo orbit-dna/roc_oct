@@ -1,5 +1,8 @@
 #!/home/longen/.pyenv/shims/python
 # -*- coding:utf-8 -*-
+"""
+暂时废弃
+"""
 import os
 import json
 import bs4
@@ -86,11 +89,15 @@ def get_task_ids(date):
 
 
 def get_jd_task_ids(date=""):
+    """应该是废弃了"""
     return json.loads(get("http://jdnew.net.jinanlongen.com/gettaskontime.ashx?startDate=%s&endDate=%s"%(date, date)).text)
 
 
 def get_total_tasks():
-    return json.loads(get(url=oct_total_adr).text)
+    try:
+        return json.loads(get(url=oct_total_adr).text)
+    except Exception:
+        return []
 
 
 def get_gender_brand_site_taxon():
