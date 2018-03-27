@@ -1,5 +1,8 @@
 #!/home/longen/.pyenv/shims/python
 # -*- coding:utf-8 -*-
+"""
+暂时废弃
+"""
 import os
 import time
 from bottle import run, route, request, template, redirect, static_file
