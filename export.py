@@ -10,7 +10,7 @@ import logging
 import traceback
 
 from io import BytesIO
-from requests import get
+from requests import get, post
 from logging import handlers
 from datetime import datetime, timedelta
 from urllib.parse import urlencode, urljoin
@@ -26,10 +26,6 @@ file_handler = handlers.RotatingFileHandler(
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
-oct_headers = {
-    "Cookie": "_session_id=47d56eeb9d0b817e0a9766cae411d81b"
-}
-
 oct_params = dict(tuple(line.strip().split(":", 1)) for line in """utf8:✓
 upload_date:计划上新时间
 planned_upload_step_end_at:
@@ -38,8 +34,31 @@ status:请选择
 cycle_grade:请选择
 store_task_id:""".split("\n"))
 
+def login_octopus():
+    url_login = 'http://octopus.app.jinanlongen.com/login'
+    user_name = 'admin'
+    password = 'meiguogou5.com'
+
+    resp = get(url_login)
+    doc = bs4.BeautifulSoup(resp.text, 'lxml')
+    cookies = resp.cookies
+    csrf_token = doc.select('meta[name=csrf-token]')[0].attrs['content']
+
+    for i in range(0, 3):
+        login_data = { 'session[name]': user_name, 'session[password]': password, 'authenticity_token': csrf_token }
+        resp = post(url_login, login_data, cookies = cookies, allow_redirects = False)
+        if resp.status_code == 302: break
+        print('failed try: %d'%i)
+        time.sleep(2)
+    else:
+        cookies = None
+
+    return cookies
 
 def get_task_ids(date):
+    cookies = login_octopus()
+    if cookies == None: raise Exception('cannot login octopus')
+
     oct_params["planned_upload_step_end_at"] = "%s-%s-%s" % (
         date[:4], date[4:6], date[6:])
     first_url = "%s?%s" % (
@@ -50,7 +69,7 @@ def get_task_ids(date):
     links.append(first_url)
     while links:
         url = links.pop()
-        resp = get(url, headers=oct_headers)
+        resp = get(url, cookies = cookies)
         soup = bs4.BeautifulSoup(resp.text, "lxml")
         tbody = soup.find(id="body")
         a = tbody.select("tr td a")
