@@ -9,8 +9,9 @@ import zipfile
 import logging
 import traceback
 
-from io import BytesIO
+import requests
 from requests import get, post
+from io import BytesIO
 from logging import handlers
 from datetime import datetime, timedelta
 from urllib.parse import urlencode, urljoin
@@ -26,6 +27,8 @@ file_handler = handlers.RotatingFileHandler(
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
+OCT_HOST = "192.168.200.42:8080"
+
 oct_params = dict(tuple(line.strip().split(":", 1)) for line in """utf8:✓
 upload_date:计划上新时间
 planned_upload_step_end_at:
@@ -35,11 +38,11 @@ cycle_grade:请选择
 store_task_id:""".split("\n"))
 
 def login_octopus():
-    url_login = 'http://octopus.app.jinanlongen.com/login'
+    url_login = 'http://{}/login'.format(OCT_HOST)
     user_name = 'admin'
     password = 'meiguogou5.com'
 
-    resp = get(url_login)
+    resp = get(url_login, timeout = 120)
     doc = bs4.BeautifulSoup(resp.text, 'lxml')
     cookies = resp.cookies
     csrf_token = doc.select('meta[name=csrf-token]')[0].attrs['content']
@@ -62,19 +65,30 @@ def get_task_ids(date):
     oct_params["planned_upload_step_end_at"] = "%s-%s-%s" % (
         date[:4], date[4:6], date[6:])
     first_url = "%s?%s" % (
-        "http://octopus.app.jinanlongen.com/store_tasks/tb_new_arrival_search",
+        "http://{}/store_tasks/tb_new_arrival_search".format(OCT_HOST),
         urlencode(oct_params))
     links = []
     task_ids = []
     links.append(first_url)
     while links:
         url = links.pop()
-        resp = get(url, cookies = cookies)
+        for i in range(1, 4):
+            try:
+                resp = get(url, cookies = cookies, timeout = (i * 60))
+                break
+            except requests.exceptions.ReadTimeout as e:
+                if i > 3:
+                    raise e
+                print('failed to get: {}. retry {} after 60 seconds'.format(url, i))
+                time.sleep(60)
+                print('retrying ...')
+
         soup = bs4.BeautifulSoup(resp.text, "lxml")
         tbody = soup.find(id="body")
-        a = tbody.select("tr td a")
-        for _a in a:
-            text = _a.text
+
+        explore_task_links = tbody.select("tr td a")
+        for _link in explore_task_links:
+            text = _link.text
             if text.isdigit():
                 task_ids.append(text)
         next = soup.select(".next a")
