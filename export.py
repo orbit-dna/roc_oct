@@ -27,7 +27,7 @@ file_handler = handlers.RotatingFileHandler(
 logger.addHandler(file_handler)
 logger.setLevel(logging.DEBUG)
 
-OCT_HOST = "192.168.200.42:8080"
+OCT_HOST = "octopus.app.jinanlongen.com"
 
 oct_params = dict(tuple(line.strip().split(":", 1)) for line in """utf8:✓
 upload_date:计划上新时间
