@@ -158,12 +158,13 @@ def search():
                     except (ValueError, TypeError):
                         days = "0"
                         last_exec_at = "尚未执行"
+                    repeated = "持续执行" if explore_task["is_repeated"] else ""
                     crawl_tasks[explore_task["explore_task_id"]] = \
                         [shop["store_name"], str(shop["store_task_id"]),
                         str(explore_task["explore_task_id"]),
                         shop["source_site_name"],
                         taxon, shop["gender"], shop["brand"],
-                        last_exec_at, days]
+                        last_exec_at, days, repeated]
             else:
                 unregist_tasks.append(shop)
         logger.debug("Compare oct task and roc task finished. ")
@@ -172,7 +173,7 @@ def search():
 
         crawl_tasks_str += \
             "店铺,店铺任务ID,ROC任务ID,来源网站名称,分类名称," \
-            "性别名称,品牌名称,最后执行时间,最后执行时间差/天\n"
+            "性别名称,品牌名称,最后执行时间,最后执行时间差/天,是否持续执行\n"
         for crawl_task in crawl_tasks.values():
             crawl_tasks_str += (",".join(crawl_task)) + "\n"
 
